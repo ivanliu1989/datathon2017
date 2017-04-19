@@ -1,3 +1,5 @@
+# The task is to predict the probability that a patient will be dispensed a drug related to Diabetes post 2015.
+
 myFiles <- list.files('./data/Transactions', full.names = T)
 library(data.table)
 
