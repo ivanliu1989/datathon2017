@@ -66,3 +66,34 @@ range(txns.diabetes[as.Date(txn.Dispense_Week) >= as.Date('2015-12-28') , txn.Pa
 # Step 3: 3rd party data
 # Step 4: Merge to master transaction table
 # Step 5: Time slice based training
+
+
+# Setup Validation Sets ---------------------------------------------------
+weeks = as.Date(unique(txns$Dispense_Week))
+weeks = weeks[order(weeks)]
+validation_index = data.table(weeks = weeks,
+                              weekNum = 1:length(weeks),
+                              test = ifelse(weeks >= as.Date('2016-01-03'), 'TEST', 'TRAIN'))
+validation_index[, validations := ifelse(weekNum <= 262, 1, -1)]
+validation_index[, validations := ifelse(weekNum <= 262 - 26, 2, validations)]
+validation_index[, validations := ifelse(weekNum <= 262 - 2 * 26, 3, validations)]
+validation_index[, validations := ifelse(weekNum <= 262 - 3 * 26, 4, validations)]
+validation_index[, validations := ifelse(weekNum <= 262 - 4 * 26, 5, validations)]
+validation_index[, validations := ifelse(weekNum <= 262 - 5 * 26, 6, validations)]
+validation_index[, validations := ifelse(weekNum <= 262 - 6 * 26, 7, validations)]
+validation_index[, validations := ifelse(weekNum <= 262 - 7 * 26, 8, validations)]
+validation_index[, validations := ifelse(weekNum <= 262 - 8 * 26, 9, validations)]
+validation_index[, validations := ifelse(weekNum <= 262 - 9 * 26, 10, validations)]
+View(validation_index)
+write.csv(validation_index, file = "./datathon2017/data/validation_index.csv", row.names = F, quote = F)
+
+cstr = unique(patient$Patient_ID)
+cstr = data.table(Patient_ID = cstr,
+                  test = ifelse(cstr >= 279201, "TEST", "TRAIN"))
+write.csv(cstr, file = "./datathon2017/data/patient_train_test.csv", row.names = F, quote = F)
+
+
+
+# Clean the meta data -----------------------------------------------------
+unique(atc$ATCLevel5Code)
+atc[is.na(ATCLevel5Code)]
