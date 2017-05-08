@@ -1,5 +1,5 @@
 rm(list = ls()); gc()
-
+library(data.table)
 trans = fread('./data/transactions_all.csv')
 load("./data/meta.RData")
 
