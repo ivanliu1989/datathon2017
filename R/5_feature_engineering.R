@@ -55,7 +55,7 @@ gc();
 
 # 27 to 
 tmp_outcomes2016 = unique(txns[Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes", Patient_ID])
-training = generateHistFeatures(txns[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")], lstTrans = as.Date("2016-01-01"), cores = 2)
+training = generateHistFeatures(txns[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")], lstTrans = as.Date(max(txns$Dispense_Week)), cores = 2)
 # test = generateHistFeatures(txns.text[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")], lstTrans = as.Date("2016-01-01"))
 training[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
 # save(training,test, file ="./xgboost_training.RData")
