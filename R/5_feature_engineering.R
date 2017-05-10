@@ -9,27 +9,6 @@ library(data.table)
 load("./data/meta.RData")
 source("./datathon2017/R/featureEngineeringMain.R")
 
-
-##### 1	Kurt/Skew of different drugs / dosage
-##### 2	Kurt/Skew of total drugs/unique drugs
-##### 3	Illness number
-##### 8	last buy durgs / illness
-##### 10 # of drugs, illness in the same prescription
-# 7	repeats interval
-# 9	Prices, reclain of different drugs, illness
-# 11 1st-2nd drugs combinations
-# 
-# 4	Ingradient number
-# 5	Drug & drug combination
-# 6	Illness & illness combination
-# 12	Manufacturer #
-# 13	Prescriber #
-# 14	Gender, age, dosage index
-
-# 17 Sequential association
-# 15 System # (illness)
-# 16 Ingredient Text Mining
-
 # 0. General --------------------------------------------------------------
 # trans[, Dispense_Week := as.Date(Dispense_Week)]
 # trans[, Year := year(Dispense_Week)]
