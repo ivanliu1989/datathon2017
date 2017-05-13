@@ -1,13 +1,8 @@
 rm(list = ls()); gc()
 library(data.table)
-# library(doParallel)
-# library(doMC)
-# registerDoMC(cores = 6)
-# setDTthreads(8)
-# getDTthreads()
 # trans = fread('./data/transactions_all.csv')
 load("./data/meta.RData")
-# source("./datathon2017/R/featureEngineeringMain.R")
+source("./datathon2017/R/featureEngineeringMain.R")
 # source("./datathon2017/R/0_Patient_Store_Postcode.R")
 
 # 0. General --------------------------------------------------------------
@@ -29,23 +24,15 @@ load("./data/meta.RData")
 load(file = "./5_xgb_model.RData")
 # Sample
 txns = copy(trans[Patient_ID <= 279201]) #  & ChronicIllness != "Others"
+# txns = copy(trans) #  & ChronicIllness != "Others"
 # txns.text = copy(trans[Patient_ID > 279201 & ChronicIllness != "Others"])
 txns = txns[Patient_ID %in% sample(unique(txns$Patient_ID), 100000)]
-gc(); 
+rm(trans); gc(); 
 
 # 27 to 
 tmp_outcomes2016 = unique(txns[Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes", Patient_ID])
 training = generateHistFeatures(txns[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")], lstTrans = as.Date(max(txns$Dispense_Week)), cores = 2)
-# test = generateHistFeatures(txns.text[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")], lstTrans = as.Date("2016-01-01"))
-# training[, response := ifelse(Patient_ID %in% buy_nbuy, 1, 0)]
-# save(training,test, file ="./xgboost_training.RData")
-training = merge(training, patient[, .(Patient_ID, gender, age, patPostArea)], by = 'Patient_ID', all.x = T)
-training[, buy_nbuy := NULL];# training[, buy_nbuy := ifelse(Patient_ID %in% buy_nbuy, 1,0)]
-training[, buy_buy := NULL]; #training[, buy_buy := ifelse(Patient_ID %in% buy_buy, 1,0)]
-training[, nbuy_buy := NULL]; #training[, nbuy_buy := ifelse(Patient_ID %in% nbuy_buy, 1,0)]
-training[, nbuy_nbuy := NULL]; #training[, nbuy_nbuy := ifelse(Patient_ID %in% nbuy_nbuy, 1,0)]
 training[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
-training[, response := ifelse(Patient_ID %in% nbuy_nbuy, 1, 0)]
 
 
 # xgboost -----------------------------------------------------------------
@@ -63,13 +50,9 @@ idx2 = sample(1:nrow(trainBC), 0.3 * nrow(trainBC))
 testBC = trainBC[idx2,]
 trainBC = trainBC[-idx2,]
 
-# predictors =intersect(colnames(training), colnames(test))[!intersect(colnames(training), colnames(test)) %in% c('Patient_ID','response')]
-predictors =colnames(trainBC)[!colnames(trainBC) %in% c('Patient_ID','response','buy_nbuy','buy_buy','nbuy_buy','nbuy_nbuy')]
+predictors =colnames(trainBC)[!colnames(trainBC) %in% c('Patient_ID','response')]
+# predictors =head(var.imp$Feature, 100)
 response = 'response'
-# response = 'buy_nbuy'
-# response = 'buy_buy'
-# response = 'nbuy_buy'
-# response = 'nbuy_nbuy'
 dtrain <- xgb.DMatrix(data.matrix(trainBC[, predictors]), label = trainBC[, response])
 dval <- xgb.DMatrix(data.matrix(validationBC[, predictors]), label = validationBC[, response])
 dtest <- xgb.DMatrix(data.matrix(testBC[, predictors]), label = testBC[, response])
@@ -113,6 +96,15 @@ pROC::roc(testBC$response, val)
 # 0.972962 / 0.9758 / 0.9679 | Specificity : 0.9024 | ATC02 | 0.15 Column | top 100 feats
 
 # 0.974710 / 0.9749 / 0.9647 | Specificity : 0.8929 | ATC01 | 0.15 Column
+
+# 0.970868 / 0.9757 / 0.9656 | Specificity : 0.8896 | ATC02 | New features
+# 0.976258 / 0.973 / 0.9654 | Specificity : 0.8881 | ATC02 | New features
+
+# 0.977104 / 0.9728 / 0.9656 | Normal
+# 0.977185 / 0.9729 / 0.9655 | Non variance 
+
+# 0.974806 / 0.9727 / 0.9655 | Normal
+# 0.969147 / 0.9668 / 0.9558 | PCA
 
 # Validate using basic algo
 benchmark = unique(trans[Patient_ID <= 279201 & ChronicIllness == "Diabetes" & Dispense_Week < as.Date("2016-01-01"), Patient_ID])
