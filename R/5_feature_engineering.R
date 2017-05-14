@@ -6,30 +6,31 @@ source("./datathon2017/R/featureEngineeringMain.R")
 # source("./datathon2017/R/0_Patient_Store_Postcode.R")
 
 # 0. General --------------------------------------------------------------
-atc_fix = data.table(ATCLevel5Name = unique(atc$ATCLevel5Name), ATCLevel5Code = 1:length(unique(atc$ATCLevel5Name)))
-atc[,ATCLevel5Code:=NULL]
-atc = merge(atc,atc_fix, by = 'ATCLevel5Name')
-trans[, Dispense_Week := as.Date(Dispense_Week)]
-trans[, Year := year(Dispense_Week)]
-trans[, Month := month(Dispense_Week)]
-trans[, Qtr := as.numeric(paste0(Year,ceiling(Month/3)))]
-trans[, Prescription_ID := paste0(Patient_ID, Prescriber_ID, as.numeric(as.Date(Prescription_Week)))]
-pres = unique(trans$Prescription_ID)
-pres = data.table(Prescription_ID = pres, Presc_ID = 1:length(pres))
-trans = merge(trans, pres, by = "Prescription_ID", all.x = TRUE)
-rm(pres); trans[,Prescription_ID := NULL]
-trans[, Presc_Itm_ID := paste0(Presc_ID, Drug_ID)]
-trans = merge(trans, chron[, .(ChronicIllness,MasterProductID)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
-trans = merge(trans, drug[,.(MasterProductID, ATCLevel2Code, ATCLevel5Code)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
-trans[ChronicIllness =="Chronic Obstructive Pulmonary Disease (COPD)", ChronicIllness := "COPD"]
-trans[is.na(ChronicIllness), ChronicIllness := 'Others']
-save(trans, "./5_xgb_model.RData")
+# atc_fix = data.table(ATCLevel5Name = unique(atc$ATCLevel5Name), ATCLevel5CodeNew = 1:length(unique(atc$ATCLevel5Name)))
+# atc = merge(atc,atc_fix, by = 'ATCLevel5Name')
+# drug = merge(drug, atc[, .(ATCLevel5Code, ATCLevel5CodeNew)], by = 'ATCLevel5Code', all.x = T)
+# drug[, ATCLevel5Code := ATCLevel5CodeNew]
+# trans[, Dispense_Week := as.Date(Dispense_Week)]
+# trans[, Year := year(Dispense_Week)]
+# trans[, Month := month(Dispense_Week)]
+# trans[, Qtr := as.numeric(paste0(Year,ceiling(Month/3)))]
+# trans[, Prescription_ID := paste0(Patient_ID, Prescriber_ID, as.numeric(as.Date(Prescription_Week)))]
+# pres = unique(trans$Prescription_ID)
+# pres = data.table(Prescription_ID = pres, Presc_ID = 1:length(pres))
+# trans = merge(trans, pres, by = "Prescription_ID", all.x = TRUE)
+# rm(pres); trans[,Prescription_ID := NULL]
+# trans[, Presc_Itm_ID := paste0(Presc_ID, Drug_ID)]
+# trans = merge(trans, chron[, .(ChronicIllness,MasterProductID)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
+# trans = merge(trans, drug[,.(MasterProductID, ATCLevel3Code, ATCLevel5Code)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
+# trans[ChronicIllness =="Chronic Obstructive Pulmonary Disease (COPD)", ChronicIllness := "COPD"]
+# trans[is.na(ChronicIllness), ChronicIllness := 'Others']
+# save(trans, file = "./5_xgb_model.RData")
 load(file = "./5_xgb_model.RData")
 # Sample
-txns = copy(trans[Patient_ID <= 279201]) #  & ChronicIllness != "Others"
-# txns = copy(trans) #  & ChronicIllness != "Others"
+# txns = copy(trans[Patient_ID <= 279201]) #  & ChronicIllness != "Others"
+txns = copy(trans) #  & ChronicIllness != "Others"
 # txns.text = copy(trans[Patient_ID > 279201 & ChronicIllness != "Others"])
-txns = txns[Patient_ID %in% sample(unique(txns$Patient_ID), 100000)]
+# txns = txns[Patient_ID %in% sample(unique(txns$Patient_ID), 100000)]
 rm(trans); gc(); 
 
 # 27 to 

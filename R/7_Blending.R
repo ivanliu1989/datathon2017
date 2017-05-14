@@ -130,7 +130,6 @@ m1 <- h2o.deeplearning(
 )
 summary(m1)
 # 0.9655779 / 0.95955
-w.dl = m1@model$validation_metrics@metrics$AUC
 h2o.dl.pred = predict(m1, as.h2o(testBC.dl))
 val.dl = as.data.frame(h2o.dl.pred[,3])[,1]
 
@@ -150,50 +149,10 @@ h2o.glm.learner = h2o.glm(training_frame=as.h2o(trainBC),
                           nfolds = nfolds,
                           early_stopping=TRUE
 )
-w.glm = h2o.glm.learner@model$validation_metrics@metrics$AUC
 # 0.9667094  / 0.9563201 
 h2o.glm.pred = predict(h2o.glm.learner, as.h2o(testBC))
 val.glm = as.data.frame(h2o.glm.pred[,3])[,1]
 
-# RF ----------------------------------------------------------------------
-h2o.rf.learner <- h2o.randomForest(
-    training_frame=as.h2o(trainBC),
-    # validation_frame=as.h2o(testBC),
-    x=predictors,
-    y=response,
-    # mtries = 12,
-    # col_sample_rate_change_per_level = 0.8,
-    # sample_rate = 0.632,
-    # col_sample_rate_per_tree = 0.8,
-    ntrees = 200,
-    max_depth = 6,
-    # min_rows = 10,
-    binomial_double_trees = TRUE,
-    balance_classes = TRUE,
-    stopping_metric = evalMetrics,
-    stopping_rounds = 2,
-    stopping_tolerance = 1e-2,
-    score_each_iteration = T,
-    fold_assignment = "Modulo",
-    nfolds = nfolds,
-    seed=999)
-
-# NB ----------------------------------------------------------------------
-h2o.nb.learner <- h2o.naiveBayes(
-    training_frame=as.h2o(trainBC.dl),
-    # validation_frame=as.h2o(testBC),
-    x=predictors,
-    y=response,
-    ignore_const_cols=TRUE,
-    compute_metrics=TRUE,
-    fold_assignment = "Modulo",
-    nfolds = nfolds,
-    seed=999
-)
-# 0.9667094  / 0.9563201 
-w.NB = h2o.nb.learner@model$validation_metrics@metrics$AUC
-h2o.nb.pred = predict(h2o.nb.learner, as.h2o(testBC))
-val.nb = as.data.frame(h2o.nb.pred[,3])[,1]
 
 # Stacking ----------------------------------------------------------------
 h2o.dl.pred.1 = tail(as.data.frame(h2o.predict(h2o.dl.learner.1, as.h2o(trainBC)))[,3],1)

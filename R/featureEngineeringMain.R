@@ -18,7 +18,7 @@ generateHistFeatures = function(txns, lstTrans = as.Date("2016-01-01"), cores = 
     # res = foreach(i=as.numeric(unique(pats$cuts)), .combine = rbind) %dopar% {
     x = txns#[Patient_ID %in% pats[cuts == i, pats]]
     
-    repNaN = function(x, rep = 0){
+    repNaN = function(x, rep = NA){
         x[,lapply(.SD,function(x){ifelse(is.nan(x),rep,x)})]    
     }
     # 1. Kurt/Skew of drug qty ------------------------------------------------
@@ -42,7 +42,8 @@ generateHistFeatures = function(txns, lstTrans = as.Date("2016-01-01"), cores = 
     
     x[, dosageQtrATC5 := sum(dosage, na.rm = T), by = .(Patient_ID, Year, ATCLevel5Code)]
     ### Ingredient 
-    
+    gc()
+    # save(x, file = "./featureset1.RData")
     # generating features
     feat.p1 = copy(unique(x[, .(Patient_ID, Qtr, Dispense_Week, Drug_ID, ChronicIllness, ATCLevel3Code,
                                 illSkew, ATCSkew, illHurt, ATCHurt, dosageQtrIll, dosageQtrATC, 
