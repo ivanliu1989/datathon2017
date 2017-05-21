@@ -56,13 +56,13 @@ f1.1 = dcast(feat.p1, Patient_ID ~ ChronicIllness, value.var = "illSkew", fun.ag
 f1.3 = dcast(feat.p1, Patient_ID ~ ATCLevel3Code, value.var = "ATCSkew", fun.aggregate = mean, fill = 0); colnames(f1.3) = c("Patient_ID", paste0("f1.3_", colnames(f1.3[,-1,with = F])))
 f1.4 = dcast(feat.p1, Patient_ID ~ ChronicIllness, value.var = "illHurt", fun.aggregate = mean, fill = 0); colnames(f1.4) = c("Patient_ID", paste0("f1.4_", colnames(f1.4[,-1,with = F])))
 f1.6 = dcast(feat.p1, Patient_ID ~ ATCLevel3Code, value.var = "ATCHurt", fun.aggregate = mean, fill = 0); colnames(f1.6) = c("Patient_ID", paste0("f1.6_", colnames(f1.6[,-1,with = F])))
-f1.7 = dcast(feat.p1, Patient_ID ~ ChronicIllness, value.var = "dosageQtrIll", fun.aggregate = mean, fill = 0); colnames(f1.7) = c("Patient_ID", paste0("f1.7_", colnames(f1.7[,-1,with = F])))
-f1.8 = dcast(feat.p1, Patient_ID ~ ATCLevel3Code, value.var = "dosageQtrATC", fun.aggregate = mean, fill = 0); colnames(f1.8) = c("Patient_ID", paste0("f1.8_", colnames(f1.8[,-1,with = F])))
+# f1.7 = dcast(feat.p1, Patient_ID ~ ChronicIllness, value.var = "dosageQtrIll", fun.aggregate = mean, fill = 0); colnames(f1.7) = c("Patient_ID", paste0("f1.7_", colnames(f1.7[,-1,with = F])))
+# f1.8 = dcast(feat.p1, Patient_ID ~ ATCLevel3Code, value.var = "dosageQtrATC", fun.aggregate = mean, fill = 0); colnames(f1.8) = c("Patient_ID", paste0("f1.8_", colnames(f1.8[,-1,with = F])))
 f1.9 = dcast(feat.p1, Patient_ID ~ ChronicIllness, value.var = "dosageIllSkew", fun.aggregate = mean, fill = 0); colnames(f1.9) = c("Patient_ID", paste0("f1.9_", colnames(f1.9[,-1,with = F])))
 f1.10 = dcast(feat.p1, Patient_ID ~ ChronicIllness, value.var = "dosageIllHurt", fun.aggregate = mean, fill = 0); colnames(f1.10) = c("Patient_ID", paste0("f1.10_", colnames(f1.10[,-1,with = F])))
 f1.11 = dcast(feat.p1, Patient_ID ~ ATCLevel3Code, value.var = "dosageATCSkew", fun.aggregate = mean, fill = 0); colnames(f1.11) = c("Patient_ID", paste0("f1.11_", colnames(f1.11[,-1,with = F])))
 f1.12 = dcast(feat.p1, Patient_ID ~ ATCLevel3Code, value.var = "dosageATCHurt", fun.aggregate = mean, fill = 0); colnames(f1.12) = c("Patient_ID", paste0("f1.12_", colnames(f1.12[,-1,with = F])))
-f1.13 = dcast(feat.p1, Patient_ID ~ ATCLevel5Code, value.var = "dosageQtrATC5", fun.aggregate = mean, fill = 0); colnames(f1.13) = c("Patient_ID", paste0("f1.13_", colnames(f1.13[,-1,with = F])))
+# f1.13 = dcast(feat.p1, Patient_ID ~ ATCLevel5Code, value.var = "dosageQtrATC5", fun.aggregate = mean, fill = 0); colnames(f1.13) = c("Patient_ID", paste0("f1.13_", colnames(f1.13[,-1,with = F])))
 # rm(f1.1); gc()
 
 # mymerge = function(x,y) merge(x,y, all = T)
@@ -172,10 +172,10 @@ setnames(store, c('stPostcode', 'Store_ID', 'StateCode', 'IsBannerGroup', 'stPos
 
 patient = patient[Patient_ID %in% x$Patient_ID]
 patient[, ageCat := ifelse(is.na(age), -1, mround(age,5))]
-f14.1 = dcast(patient, Patient_ID ~ patPostInit, fun = length); setnames(f14.1, c('Patient_ID', paste0('PatState_', colnames(f14.1)[-1])))
+# f14.1 = dcast(patient, Patient_ID ~ patPostInit, fun = length); setnames(f14.1, c('Patient_ID', paste0('PatState_', colnames(f14.1)[-1])))
 f14.2 = dcast(patient, Patient_ID ~ ageCat, fun = length); setnames(f14.2, c('Patient_ID', paste0('PatAge_', colnames(f14.2)[-1])))
 f14.3 = dcast(patient, Patient_ID ~ gender, fun = length); setnames(f14.3, c('Patient_ID', paste0('PatGender_', colnames(f14.3)[-1])))
-f14.4 = patient[,.(Patient_ID, patPostArea)]
+# f14.4 = patient[,.(Patient_ID, patPostArea)]
 feat.p15 = merge(x, store, by = 'Store_ID', all.x = TRUE)
 f15.1 = data.table::dcast(feat.p15,Patient_ID~IsBannerGroup,fun=length, fill = 0); setnames(f15.1, c('Patient_ID', paste0("f15.1_", colnames(f15.1[,-1,with = F]))))
 f15.2 = data.table::dcast(feat.p15,Patient_ID~StateCode,fun=length, fill = 0); setnames(f15.2, c('Patient_ID', paste0("f15.2_", colnames(f15.2[,-1,with = F]))))

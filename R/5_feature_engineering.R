@@ -2,8 +2,18 @@ rm(list = ls()); gc()
 library(data.table)
 # trans = fread('./data/transactions_all.csv')
 load("./data/meta.RData")
-source("./datathon2017/R/featureEngineeringMain.R")
+# source("./datathon2017/R/featureEngineeringMain.R")
 # source("./datathon2017/R/0_Patient_Store_Postcode.R")
+# drug[, ATC2 := gsub(ATCLevel1Code, '', ATCLevel2Code), by = MasterProductID]
+# drug[, ATC3 := gsub(ATCLevel2Code, '', ATCLevel3Code), by = MasterProductID]
+# drug[, ATC4 := gsub(ATCLevel3Code, '', ATCLevel4Code), by = MasterProductID]
+# drug[, ATC5 := gsub(ATCLevel4Code, '', ATCLevel5Code), by = MasterProductID]
+# drug[, ATC1 := ATCLevel1Code]
+# drug[, ATC1 := ifelse(ATC1 == "", NA, ATC1)]
+# drug[, ATC2 := ifelse(ATC2 == "", NA, ATC2)]
+# drug[, ATC3 := ifelse(ATC3 == "", NA, ATC3)]
+# drug[, ATC4 := ifelse(ATC4 == "", NA, ATC4)]
+# drug[, ATC5 := ifelse(ATC5 == "", NA, ATC5)]
 
 # 0. General --------------------------------------------------------------
 # atc_fix = data.table(ATCLevel5Name = unique(atc$ATCLevel5Name), ATCLevel5CodeNew = 1:length(unique(atc$ATCLevel5Name)))
@@ -21,10 +31,14 @@ source("./datathon2017/R/featureEngineeringMain.R")
 # rm(pres); trans[,Prescription_ID := NULL]
 # trans[, Presc_Itm_ID := paste0(Presc_ID, Drug_ID)]
 # trans = merge(trans, chron[, .(ChronicIllness,MasterProductID)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
-# trans = merge(trans, drug[,.(MasterProductID, ATCLevel3Code, ATCLevel5Code)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
+# trans = merge(trans, drug[,.(MasterProductID, ATC1, ATC2, ATC3, ATC4, ATC5)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
 # trans[ChronicIllness =="Chronic Obstructive Pulmonary Disease (COPD)", ChronicIllness := "COPD"]
 # trans[is.na(ChronicIllness), ChronicIllness := 'Others']
 # save(trans, file = "./5_xgb_model.RData")
+
+
+
+
 load(file = "./5_xgb_model.RData")
 # Sample
 # txns = copy(trans[Patient_ID <= 279201]) #  & ChronicIllness != "Others"
