@@ -15,7 +15,7 @@
 
 x = trans[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")]
 lstTrans = as.Date(max(trans$Dispense_Week))
-
+rm(trans)
 
 
 repNaN = function(x, rep = NA){
@@ -40,16 +40,16 @@ x[, dosageIllHurt :=  moments::kurtosis(dosageIll, na.rm = T), by = .(Patient_ID
 x[, dosageATCSkew :=  moments::skewness(dosageIll, na.rm = T), by = .(Patient_ID, ATCLevel3Code)]
 x[, dosageATCHurt :=  moments::kurtosis(dosageIll, na.rm = T), by = .(Patient_ID, ATCLevel3Code)]
 
-x[, dosageQtrATC5 := sum(dosage, na.rm = T), by = .(Patient_ID, Year, ATCLevel5Code)]
+# x[, dosageQtrATC5 := sum(dosage, na.rm = T), by = .(Patient_ID, Year, ATCLevel5Code)]
 ### Ingredient 
 gc()
 # save(x, file = "./featureset1.RData")
 # load(file = "./featureset1.RData")
 # generating features
-feat.p1 = unique(x[, .(Patient_ID, Qtr, Dispense_Week, Drug_ID, ChronicIllness, ATCLevel3Code,ATCLevel5Code,
+feat.p1 = unique(x[, .(Patient_ID, Qtr, Dispense_Week, Drug_ID, ChronicIllness, ATCLevel3Code,
                        illSkew, ATCSkew, illHurt, ATCHurt, dosageQtrIll, dosageQtrATC, 
                        dosageIllSkew, dosageIllHurt, dosageATCSkew, dosageATCHurt
-                       ,dosageQtrATC5)])
+                       )])
 feat.p1 = repNaN(feat.p1)
 feat.p1[is.na(ChronicIllness), ChronicIllness:="Others"]
 f1.1 = dcast(feat.p1, Patient_ID ~ ChronicIllness, value.var = "illSkew", fun.aggregate = mean, fill = 0); colnames(f1.1) = c("Patient_ID", paste0("f1.1_", colnames(f1.1[,-1,with = F])))

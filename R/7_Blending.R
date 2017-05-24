@@ -1,7 +1,12 @@
 # Blending ----------------------------------------------------------------
 val = predict(xgbFit, dtest)
+caret::confusionMatrix(ifelse(val.xgb >= 0.5, 1, 0),testBC$response)
+pROC::roc(testBC$response, val.xgb) 
+# glm 0.9548/0.9573
+# xgb 0.9649/0.9728
+# 0.9615/0.9707
 
-val.blend = (val.glm + val + val.dl)/3
+val.blend = (val.glm + val.xgb)/2
 val.blend.f = ifelse(val.blend>= 0.5, 1, 0); table(val.blend.f)
 table(val.blend.f == testBC$response)[2]/sum(table(val.blend.f == testBC$response)) 
 
@@ -22,7 +27,7 @@ testBC = trainBC[idx2,]
 trainBC = trainBC[-idx2,]
 table(validationBC$response); table(trainBC$response); table(testBC$response)
 
-predictors =colnames(trainBC)[!colnames(trainBC) %in% c('Patient_ID','response','buy_nbuy','buy_buy','nbuy_buy','nbuy_nbuy')]
+predictors =colnames(trainBC)[!colnames(trainBC) %in% c('Patient_ID','response')]
 response = 'response'
 dtrain <- xgb.DMatrix(data.matrix(trainBC[, predictors]), label = trainBC[, response])
 dval <- xgb.DMatrix(data.matrix(validationBC[, predictors]), label = validationBC[, response])
@@ -57,7 +62,7 @@ val.xgb = val
 # h2o ---------------------------------------------------------------------
 library(h2o)
 reg = FALSE
-localH2O <- h2o.init(max_mem_size = '40g', nthreads = -1)
+localH2O <- h2o.init(max_mem_size = '40g', nthreads = 7)
 h2o.removeAll()
 nfolds = 5
 evalMetrics = ifelse(reg, 'MSE', 'AUC')
@@ -140,7 +145,7 @@ h2o.glm.learner = h2o.glm(training_frame=as.h2o(trainBC),
                           x=predictors,
                           y=response,
                           family=glm.family,
-                          max_iterations=1e5,
+                          max_iterations=1e8,
                           # standardize = TRUE,
                           # intercept = FALSE,
                           alpha = 0, # 1 lasso | 0 ridge

@@ -31,7 +31,7 @@ load("./data/meta.RData")
 # rm(pres); trans[,Prescription_ID := NULL]
 # trans[, Presc_Itm_ID := paste0(Presc_ID, Drug_ID)]
 # trans = merge(trans, chron[, .(ChronicIllness,MasterProductID)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
-# trans = merge(trans, drug[,.(MasterProductID, ATC1, ATC2, ATC3, ATC4, ATC5)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
+# trans = merge(trans, drug[,.(MasterProductID, ATCLevel3Code)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
 # trans[ChronicIllness =="Chronic Obstructive Pulmonary Disease (COPD)", ChronicIllness := "COPD"]
 # trans[is.na(ChronicIllness), ChronicIllness := 'Others']
 # save(trans, file = "./5_xgb_model.RData")
