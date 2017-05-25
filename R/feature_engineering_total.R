@@ -13,7 +13,7 @@
 # 12 Manufacturer #
 # Index
 
-x = trans[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")]
+x = trans[(Dispense_Week < as.Date("2016-01-01"))]
 lstTrans = as.Date(max(trans$Dispense_Week))
 rm(trans)
 

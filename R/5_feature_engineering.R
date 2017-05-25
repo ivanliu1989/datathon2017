@@ -1,40 +1,40 @@
 rm(list = ls()); gc()
 library(data.table)
-# trans = fread('./data/transactions_all.csv')
+trans = fread('./data/transactions_all.csv')
 load("./data/meta.RData")
-# source("./datathon2017/R/featureEngineeringMain.R")
-# source("./datathon2017/R/0_Patient_Store_Postcode.R")
-# drug[, ATC2 := gsub(ATCLevel1Code, '', ATCLevel2Code), by = MasterProductID]
-# drug[, ATC3 := gsub(ATCLevel2Code, '', ATCLevel3Code), by = MasterProductID]
-# drug[, ATC4 := gsub(ATCLevel3Code, '', ATCLevel4Code), by = MasterProductID]
-# drug[, ATC5 := gsub(ATCLevel4Code, '', ATCLevel5Code), by = MasterProductID]
-# drug[, ATC1 := ATCLevel1Code]
-# drug[, ATC1 := ifelse(ATC1 == "", NA, ATC1)]
-# drug[, ATC2 := ifelse(ATC2 == "", NA, ATC2)]
-# drug[, ATC3 := ifelse(ATC3 == "", NA, ATC3)]
-# drug[, ATC4 := ifelse(ATC4 == "", NA, ATC4)]
-# drug[, ATC5 := ifelse(ATC5 == "", NA, ATC5)]
+source("./datathon2017/R/featureEngineeringMain.R")
+source("./datathon2017/R/0_Patient_Store_Postcode.R")
+drug[, ATC2 := gsub(ATCLevel1Code, '', ATCLevel2Code), by = MasterProductID]
+drug[, ATC3 := gsub(ATCLevel2Code, '', ATCLevel3Code), by = MasterProductID]
+drug[, ATC4 := gsub(ATCLevel3Code, '', ATCLevel4Code), by = MasterProductID]
+drug[, ATC5 := gsub(ATCLevel4Code, '', ATCLevel5Code), by = MasterProductID]
+drug[, ATC1 := ATCLevel1Code]
+drug[, ATC1 := ifelse(ATC1 == "", NA, ATC1)]
+drug[, ATC2 := ifelse(ATC2 == "", NA, ATC2)]
+drug[, ATC3 := ifelse(ATC3 == "", NA, ATC3)]
+drug[, ATC4 := ifelse(ATC4 == "", NA, ATC4)]
+drug[, ATC5 := ifelse(ATC5 == "", NA, ATC5)]
 
 # 0. General --------------------------------------------------------------
-# atc_fix = data.table(ATCLevel5Name = unique(atc$ATCLevel5Name), ATCLevel5CodeNew = 1:length(unique(atc$ATCLevel5Name)))
-# atc = merge(atc,atc_fix, by = 'ATCLevel5Name')
-# drug = merge(drug, atc[, .(ATCLevel5Code, ATCLevel5CodeNew)], by = 'ATCLevel5Code', all.x = T)
-# drug[, ATCLevel5Code := ATCLevel5CodeNew]
-# trans[, Dispense_Week := as.Date(Dispense_Week)]
-# trans[, Year := year(Dispense_Week)]
-# trans[, Month := month(Dispense_Week)]
-# trans[, Qtr := as.numeric(paste0(Year,ceiling(Month/3)))]
-# trans[, Prescription_ID := paste0(Patient_ID, Prescriber_ID, as.numeric(as.Date(Prescription_Week)))]
-# pres = unique(trans$Prescription_ID)
-# pres = data.table(Prescription_ID = pres, Presc_ID = 1:length(pres))
-# trans = merge(trans, pres, by = "Prescription_ID", all.x = TRUE)
-# rm(pres); trans[,Prescription_ID := NULL]
-# trans[, Presc_Itm_ID := paste0(Presc_ID, Drug_ID)]
-# trans = merge(trans, chron[, .(ChronicIllness,MasterProductID)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
-# trans = merge(trans, drug[,.(MasterProductID, ATCLevel3Code)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
-# trans[ChronicIllness =="Chronic Obstructive Pulmonary Disease (COPD)", ChronicIllness := "COPD"]
-# trans[is.na(ChronicIllness), ChronicIllness := 'Others']
-# save(trans, file = "./5_xgb_model.RData")
+atc_fix = data.table(ATCLevel5Name = unique(atc$ATCLevel5Name), ATCLevel5CodeNew = 1:length(unique(atc$ATCLevel5Name)))
+atc = merge(atc,atc_fix, by = 'ATCLevel5Name')
+drug = merge(drug, atc[, .(ATCLevel5Code, ATCLevel5CodeNew)], by = 'ATCLevel5Code', all.x = T)
+drug[, ATCLevel5Code := ATCLevel5CodeNew]
+trans[, Dispense_Week := as.Date(Dispense_Week)]
+trans[, Year := year(Dispense_Week)]
+trans[, Month := month(Dispense_Week)]
+trans[, Qtr := as.numeric(paste0(Year,ceiling(Month/3)))]
+trans[, Prescription_ID := paste0(Patient_ID, Prescriber_ID, as.numeric(as.Date(Prescription_Week)))]
+pres = unique(trans$Prescription_ID)
+pres = data.table(Prescription_ID = pres, Presc_ID = 1:length(pres))
+trans = merge(trans, pres, by = "Prescription_ID", all.x = TRUE)
+rm(pres); trans[,Prescription_ID := NULL]
+trans[, Presc_Itm_ID := paste0(Presc_ID, Drug_ID)]
+trans = merge(trans, chron[, .(ChronicIllness,MasterProductID)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
+trans = merge(trans, drug[,.(MasterProductID, ATCLevel3Code,ATCLevel5Code)], by.x = "Drug_ID", by.y = "MasterProductID", all.x = TRUE)
+trans[ChronicIllness =="Chronic Obstructive Pulmonary Disease (COPD)", ChronicIllness := "COPD"]
+trans[is.na(ChronicIllness), ChronicIllness := 'Others']
+save(trans, file = "./5_xgb_model.RData")
 
 
 

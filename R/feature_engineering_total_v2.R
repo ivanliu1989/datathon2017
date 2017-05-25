@@ -3,8 +3,9 @@ library(data.table)
 load("./data/meta.RData")
 load(file = "./5_xgb_model.RData")
 
-x = trans[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")]
-lstTrans = as.Date(max(trans$Dispense_Week))
+# x = trans[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")]
+x = trans[(Dispense_Week < as.Date("2016-01-01"))]
+lstTrans = as.Date(max(x$Dispense_Week))
 rm(trans); gc()
 repNaN = function(x, rep = NA){
     x[,lapply(.SD,function(x){ifelse(is.nan(x),rep,x)})]    
@@ -39,7 +40,7 @@ feat.p1 = unique(x[, .(Patient_ID, Qtr, Dispense_Week, Drug_ID, ChronicIllness, 
                        illSkew, ATCSkew, illHurt, ATCHurt,
                        dosageIllSkew, dosageIllHurt, dosageATCSkew, dosageATCHurt
 )])
-feat.p1 = repNaN(feat.p1)
+feat.p1 = repNaN(feat.p1)+
 feat.p1[is.na(ChronicIllness), ChronicIllness:="Others"]
 f1.1 = dcast(feat.p1, Patient_ID ~ ChronicIllness, value.var = "illSkew", fun.aggregate = mean, fill = 0); colnames(f1.1) = c("Patient_ID", paste0("f1.1_", colnames(f1.1[,-1,with = F])))
 f1.3 = dcast(feat.p1, Patient_ID ~ ATCLevel3Code, value.var = "ATCSkew", fun.aggregate = mean, fill = 0); colnames(f1.3) = c("Patient_ID", paste0("f1.3_", colnames(f1.3[,-1,with = F])))
@@ -62,12 +63,12 @@ x[, lstIllBuy := as.numeric(lstTrans - max(Dispense_Week, na.rm = T))/7, by = .(
 x[, lstDrugBuy := as.numeric(lstTrans - max(Dispense_Week, na.rm = T))/7, by = .(Patient_ID, Drug_ID)]
 x[, lstATCBuy := as.numeric(lstTrans - max(Dispense_Week, na.rm = T))/7, by = .(Patient_ID, ATCLevel3Code)]
 x[, illLength := as.numeric(max(Dispense_Week, na.rm = T) - min(Dispense_Week, na.rm = T))/7, by = .(Patient_ID, ChronicIllness)]
-x[, drugLength := as.numeric(max(Dispense_Week, na.rm = T) - min(Dispense_Week, na.rm = T))/7, by = .(Patient_ID, Drug_ID)]
+# x[, drugLength := as.numeric(max(Dispense_Week, na.rm = T) - min(Dispense_Week, na.rm = T))/7, by = .(Patient_ID, Drug_ID)]
 x[, ATCLength := as.numeric(max(Dispense_Week, na.rm = T) - min(Dispense_Week, na.rm = T))/7, by = .(Patient_ID, ATCLevel3Code)]
 # generating features
 feat.p3 = unique(x[, .(Patient_ID, Drug_ID, ChronicIllness, ATCLevel3Code,
                        lstIllBuy, lstDrugBuy, lstATCBuy,
-                       illLength, drugLength, ATCLength)])
+                       illLength, ATCLength)])
 feat.p3 = repNaN(feat.p3)
 f3.1 = dcast(feat.p3, Patient_ID ~ ChronicIllness, value.var = "lstIllBuy", fun.aggregate = mean, fill = NA); colnames(f3.1) = c("Patient_ID", paste0("f3.1_", colnames(f3.1[,-1,with = F])))
 f3.2 = dcast(feat.p3, Patient_ID ~ ATCLevel3Code, value.var = "lstATCBuy", fun.aggregate = mean, fill = NA); colnames(f3.2) = c("Patient_ID", paste0("f3.2_", colnames(f3.2[,-1,with = F])))
@@ -152,15 +153,15 @@ repNaN = function(x, rep = NA){
     x[,lapply(.SD,function(x){ifelse(is.nan(x),rep,x)})]    
 }
 fnl.dat = repNaN(fnl.dat)
-save(fnl.dat, file = "./feat_all_20170524.RData")
+save(fnl.dat, file = "./feat_all_20170525_fixed.RData")
 
 
 # Scale NVZ ---------------------------------------------------------------
 # NVZ
 library(caret)
 # Scale & Center
-load(file = "./feat_all_20170524.RData")
+load(file = "./feat_all_20170525_fixed.RData")
 cols <- names(fnl.dat)[-1]
 fnl.dat[, (cols) := lapply(.SD, scale), .SDcols=cols]
-save(fnl.dat, file = "./feat_all_scale_20170524.RData")
+save(fnl.dat, file = "./feat_all_scale_20170525_fixed.RData")
 
