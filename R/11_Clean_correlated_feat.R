@@ -4,6 +4,26 @@ load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
 gc()
 
 setDF(fnl.dat)
+toRM = c()
+for(i in 1:ncol(fnl.dat)){
+    if(length(unique(fnl.dat[,i]))==1){
+        print(colnames(fnl.dat)[i])
+        toRM = c(toRM, colnames(fnl.dat)[i])
+    }
+}
+
+
+for(f in toRM){
+    print(unique(fnl.dat[, f]))
+}
+fnl.dat = fnl.dat[, !(colnames(fnl.dat) %in% toRM)]
+# fnl.dat[, Patient_ID := NULL]
+gc()
+save(fnl.dat, file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
+
+
+
+setDF(fnl.dat)
 for(i in 1:ncol(fnl.dat)){
     if(sum(is.nan(fnl.dat[,i]))>0){
         print(colnames(fnl.dat)[i])
@@ -30,24 +50,7 @@ save(fnl.dat, file = "./modelData/feat_all_scale_20170525_fix_all_extra_imputed.
 
 
 
-# setDF(fnl.dat)
-# toRM = c()
-# for(i in 1:ncol(fnl.dat)){
-#     if(length(unique(fnl.dat[,i]))==1){
-#         print(colnames(fnl.dat)[i])
-#         toRM = c(toRM, colnames(fnl.dat)[i])
-#     }
-# }
-# 
-# 
-# for(f in toRM){
-#     print(unique(fnl.dat[, f]))
-# }
-# fnl.dat = fnl.dat[, !(colnames(fnl.dat) %in% toRM)]
-# # fnl.dat[, Patient_ID := NULL]
-# gc()
-# save(fnl.dat, file = "./modelData/feat_all_scale_20170525_fix_all_extra_imputed_cleaned.RData")
-# 
+
 
 
 library(data.table)

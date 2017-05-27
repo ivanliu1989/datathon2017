@@ -6,10 +6,7 @@ rm(list = ls()); gc()
 load(file = "./modelData/tmp_outcomes2016.RData")
 load(file = "./modelData/feat_all_extra_imputed_cleaned_pca_0527.RData")
 # load(file = "./modelData/feat_all_scale_20170525_fix_all_extra_imputed_cleaned.RData")
-# load(file = "./modelData/feat_all_scale_20170525_fix_all.RData")
 # load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
-# load(file = "./modelData/feat_all_scale_20170525_fix_all_extra_imputed.RData")
-# load(file = "./modelData/feat_all_scale_20170525_fix_all_impute.RData")
 setDT(fnl.dat)
 fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
 # repNaN = function(x, rep = NA){
