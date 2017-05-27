@@ -12,10 +12,74 @@ repNaN = function(x, rep = NA){
 }
 
 
+# 0. New features ---------------------------------------------------------
+setorder(x, Patient_ID, ChronicIllness, Dispense_Week)
+x[, illPurchaseInterval := abs(as.numeric(Dispense_Week - shift(Dispense_Week, type = "lead", fill = lstTrans))/7), 
+  by = .(Patient_ID, ChronicIllness)]
+x[ChronicIllness == "Depression" & Patient_ID == 521970, .(illPurchaseInterval)]
+setorder(x, Patient_ID, ATCLevel3Code, Dispense_Week)
+x[, atcPurchaseInterval := abs(as.numeric(Dispense_Week - shift(Dispense_Week, type = "lead", fill = lstTrans))/7), 
+  by = .(Patient_ID, ATCLevel3Code)]
+
+gc()
+x[, illExpDist := pexp(illPurchaseInterval, 1/mean(abs(illPurchaseInterval), na.rm = T)), by = .(Patient_ID, ChronicIllness)]
+x[, illChgRatio := illPurchaseInterval/mean(illPurchaseInterval, na.rm = T), by = .(Patient_ID, ChronicIllness)]
+x[, atcExpDist := pexp(atcPurchaseInterval, 1/mean(atcPurchaseInterval, na.rm = T)), by = .(Patient_ID, ATCLevel3Code)]
+x[, atcChgRatio := atcPurchaseInterval/mean(illPurchaseInterval, na.rm = T), by = .(Patient_ID, ATCLevel3Code)]
+
+load(file = "./modelData/tmp_outcomes2016.RData")
+y = unique(x[Patient_ID %in% tmp_outcomes2016, .(Patient_ID, ChronicIllness, ATCLevel3Code, illPurchaseInterval, atcPurchaseInterval)])
+y[, avgPosIllIPI := mean(illPurchaseInterval, na.rm = T), by = .(Patient_ID, ChronicIllness)]
+y[, avgPosATCIPI := mean(atcPurchaseInterval, na.rm = T), by = .(Patient_ID, ATCLevel3Code)]
+y = unique(y[, .(Patient_ID, ChronicIllness, ATCLevel3Code, avgPosIllIPI, avgPosATCIPI)])
+gc()
+y[, avgPosIllIPI := median(avgPosIllIPI), by = ChronicIllness]
+y[, avgPosATCIPI := median(avgPosATCIPI), by = ATCLevel3Code]
+y.ill = unique(y[, .(ChronicIllness, avgPosIllIPI)])
+y.atc = unique(y[, .(ATCLevel3Code, avgPosATCIPI)])
+save(y.ill, y.atc, file = "./index_data.RData")
+
+x[, latestIllPurchase := ifelse(Dispense_Week == max(Dispense_Week), 1, 0), by = .(Patient_ID, ChronicIllness)]
+x[, latestATCPurchase := ifelse(Dispense_Week == max(Dispense_Week), 1, 0), by = .(Patient_ID, ATCLevel3Code)]
+feat.ill = unique(x[latestIllPurchase == 1, .(Patient_ID, ChronicIllness, illExpDist, illChgRatio, illPurchaseInterval)])
+feat.atc = unique(x[latestATCPurchase == 1, .(Patient_ID, ATCLevel3Code, atcExpDist, atcChgRatio, atcPurchaseInterval)])
+
+feat.ill.fnl <- merge(feat.ill, y.ill, by = "ChronicIllness", all.x = TRUE)
+feat.atc.fnl <- merge(feat.atc, y.atc, by = "ATCLevel3Code", all.x = TRUE)
+
+feat.ill.fnl[, illIndex := illPurchaseInterval / avgPosIllIPI]
+feat.ill.fnl[, illChgRatio := ifelse(is.infinite(illChgRatio),10000, illChgRatio)]
+feat.atc.fnl[, atcIndex := atcPurchaseInterval / avgPosATCIPI]
+feat.atc.fnl[, atcChgRatio := ifelse(is.infinite(atcChgRatio),10000, atcChgRatio)]
+save(feat.ill.fnl, feat.atc.fnl, file = "./index_data.RData")
+f0.1 = dcast(feat.ill.fnl, Patient_ID ~ ChronicIllness, value.var = "illIndex", fun.aggregate = mean, fill = 100); 
+colnames(f0.1) = c("Patient_ID", paste0("f0.1_", colnames(f0.1[,-1,with = F])))
+f0.2 = dcast(feat.ill.fnl, Patient_ID ~ ChronicIllness, value.var = "illExpDist", fun.aggregate = mean, fill = NA); 
+colnames(f0.2) = c("Patient_ID", paste0("f0.2_", colnames(f0.2[,-1,with = F])))
+f0.3 = dcast(feat.ill.fnl, Patient_ID ~ ChronicIllness, value.var = "illChgRatio", fun.aggregate = mean, fill = NA); 
+colnames(f0.3) = c("Patient_ID", paste0("f0.3_", colnames(f0.3[,-1,with = F])))
+
+f0.4 = dcast(feat.atc.fnl, Patient_ID ~ ATCLevel3Code, value.var = "atcIndex", fun.aggregate = mean, fill = 100); 
+colnames(f0.4) = c("Patient_ID", paste0("f0.4_", colnames(f0.4[,-1,with = F])))
+f0.5 = dcast(feat.atc.fnl, Patient_ID ~ ATCLevel3Code, value.var = "atcExpDist", fun.aggregate = mean, fill = NA); 
+colnames(f0.5) = c("Patient_ID", paste0("f0.5_", colnames(f0.5[,-1,with = F])))
+f0.6 = dcast(feat.atc.fnl, Patient_ID ~ ATCLevel3Code, value.var = "atcChgRatio", fun.aggregate = mean, fill = NA); 
+colnames(f0.6) = c("Patient_ID", paste0("f0.6_", colnames(f0.6[,-1,with = F])))
+
+mymerge = function(x,y) merge(x,y, all = T)
+feat.p0 = Reduce(mymerge,list(f0.1,f0.2,f0.3,f0.4,f0.5,f0.6))
+repNaN = function(x, rep = NA){
+    x[,lapply(.SD,function(x){ifelse(is.nan(x),rep,x)})]    
+}
+feat.p0 = repNaN(feat.p0)
+cols <- names(feat.p0)[-1]
+feat.p0[, (cols) := lapply(.SD, scale), .SDcols=cols]
+save(feat.p0, file = "./feat_p0_scaled.RData")
+
+
 # 1. Kurt/Skew of drug qty -----------------------------------------------
 cat("\nFeature Sets 1...")
 library(moments)
-x[, dosage := as.numeric((as.numeric(Dispense_Week - shift(Dispense_Week))/7)/(shift(RepeatsLeft_Qty)-RepeatsLeft_Qty)), by = Presc_Itm_ID]
 x[, dosageQtrIll := sum(dosage, na.rm = T), by = .(Patient_ID, Qtr, ChronicIllness)]
 x[, dosageQtrATC := sum(dosage, na.rm = T), by = .(Patient_ID, Qtr, ATCLevel3Code)]
 x[, dosageQtrATC5 := sum(dosage, na.rm = T), by = .(Patient_ID, Year, ATCLevel5Code)]
@@ -162,21 +226,34 @@ repNaN = function(x, rep = NA){
 }
 fnl.dat = repNaN(fnl.dat)
 save(fnl.dat, file = "./feat_all_20170525_fix_extra.RData")
-# NVZ
-library(caret)
-ncol(fnl.dat)
-# toDelAll = c()
-load(file = "./nzv.RData")
-# nzv <- nearZeroVar(fnl.dat[,4001:4572, with = F], saveMetrics= TRUE)
-toDel = rownames(nzv[nzv$zeroVar,])
-toDelAll = c(toDelAll, toDel)
-save(toDelAll, file = "./nzv.RData")
-fnl.dat[, (toDelAll):=NULL]
-save(fnl.dat, file = "./feat_all_20170525_fix_extra.RData")
+
 # Scale & Center
 # load(file = "./feat_all_20170525_fix_extra.RData")
 cols <- names(fnl.dat)[-1]
-idx = 4001:4507; gc()
+idx = 2001:3189; gc() # 3189
 fnl.dat[, (cols[idx]) := lapply(.SD, scale), .SDcols=cols[idx]]
 save(fnl.dat, file = "./feat_all_scale_20170525_fix_extra.RData")
 
+
+library(data.table)
+load(file = "./modelData/feat_all_scale_20170525_fix_extra.RData.RData")
+fnl.dat.all = copy(fnl.dat); rm(fnl.dat); gc()
+load(file = "./modelData/feat_all_scale_20170525_fixed.RData")
+
+fnl.dat = merge(fnl.dat, fnl.dat.all, by = "Patient_ID")
+
+
+save(fnl.dat, file = "./modelData/feat_all_scale_20170525_fix_all.RData")
+
+
+
+
+# Adding new features -----------------------------------------------------
+rm(list = ls());gc()
+load(file = "./modelData/feat_all_scale_20170525_fix_all.RData")
+load(file = "./feat_p0_scaled.RData")
+dim(fnl.dat); gc()
+fnl.dat = merge(fnl.dat, feat.p0, by = "Patient_ID")
+dim(fnl.dat)
+
+save(fnl.dat, file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
