@@ -2,8 +2,8 @@ library(data.table)
 rm(list = ls()); gc()
 load(file = "./modelData/tmp_outcomes2016.RData")
 # load(file = "./modelData/feat_all_extra_imputed_cleaned_pca_0527.RData")
-load(file = "./modelData/feat_all_scale_20170525_fix_all_extra_imputed_cleaned.RData")
-# load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
+# load(file = "./modelData/feat_all_scale_20170525_fix_all_extra_imputed_cleaned.RData")
+load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
 setDT(fnl.dat)
 fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
 predictors =colnames(fnl.dat)[!colnames(fnl.dat) %in% c('Patient_ID','response')]
@@ -32,8 +32,8 @@ param <- list(
     objective = "binary:logistic",
     eval_metric = "auc",
     eval_metric = "rmse",
-    booster = "gbtree",
-    # booster = "gblinear",
+    # booster = "gbtree",
+    booster = "gblinear",
     gamma = 1,
     min_child_weight = 20,
     subsample = 0.8,
@@ -42,43 +42,43 @@ param <- list(
 
 
 # Part A ------------------------------------------------------------------
-xgbFit1 <- xgb.train(param,dtrain,nrounds = 60,watchlist,print_every_n = 5, verbose = 1)
+xgbFit1 <- xgb.train(param,dtrain,nrounds = 20,watchlist,print_every_n = 5, verbose = 1)
 var.imp = xgb.importance(colnames(dtrain), model = xgbFit1)
-write.csv(var.imp, file = paste0("./featureImportance_xgbTreeImputed_meta1.csv"))
+write.csv(var.imp, file = paste0("./featureImportance_xgbLinearRaw_meta1.csv"))
 # save(xgbFit, file = paste0("./xgb_meta_1.RData"))
 gc()
 featStacking1 = predict(xgbFit1, dval)
-featStacking1 = data.frame(Patient_ID = validationBC$Patient_ID, xgbTreeImputed = featStacking1)
+featStacking1 = data.frame(Patient_ID = validationBC$Patient_ID, xgbLinearRaw = featStacking1)
 
 # Part B ------------------------------------------------------------------
 watchlist <- list(train = dval, eval = dtrain)
-xgbFit2 <- xgb.train(param,dval,nrounds = 60,watchlist,print_every_n = 5, verbose = 1)
+xgbFit2 <- xgb.train(param,dval,nrounds = 20,watchlist,print_every_n = 5, verbose = 1)
 var.imp = xgb.importance(colnames(dtrain), model = xgbFit2)
-write.csv(var.imp, file = paste0("./featureImportance_xgbTreeImputed_meta2.csv"))
+write.csv(var.imp, file = paste0("./featureImportance_xgbLinearRaw_meta2.csv"))
 gc()
 featStacking2 = predict(xgbFit2, dtrain)
-featStacking2 = data.frame(Patient_ID = trainBC$Patient_ID, xgbTreeImputed = featStacking2)
+featStacking2 = data.frame(Patient_ID = trainBC$Patient_ID, xgbLinearRaw = featStacking2)
 
-xgbTreeImputed = rbind(featStacking1, featStacking2)
-save(xgbTreeImputed, file = "./modelData/Metadata/xgbTreeImputed.RData")
-save(predictors, xgbFit1, xgbFit2, file = "./modelData/Metadata/xgbTreeImputed_XGBModel_Feat.RData")
+xgbLinearRaw = rbind(featStacking1, featStacking2)
+save(xgbLinearRaw, file = "./modelData/Metadata/xgbLinearRaw.RData")
+save(predictors, xgbFit1, xgbFit2, file = "./modelData/Metadata/xgbLinearRaw_XGBModel_Feat.RData")
 gc()
 
 
 # Test --------------------------------------------------------------------
 rm(training); rm(trainBC); rm(validationBC); rm(dtrain); rm(dval); rm(watchlist); rm(var.imp); gc()
-load(file = "./modelData/Metadata/xgbTreeImputed_XGBModel_Feat.RData")
-load(file = "./modelData/Metadata/xgbTreeImputed.RData")
+load(file = "./modelData/Metadata/xgbLinearRaw_XGBModel_Feat.RData")
+load(file = "./modelData/Metadata/xgbLinearRaw.RData")
 setDF(testing)
 dtrain <- xgb.DMatrix(data.matrix(testing[, predictors]))
 gc()
 featStackingTest1 = predict(xgbFit1, dtrain)
 featStackingTest2 = predict(xgbFit2, dtrain)
-xgbTreeImputedTest = data.frame(Patient_ID = testing$Patient_ID, xgbTreeImputed = (featStackingTest1 + featStackingTest2)/2)
-tail(xgbTreeImputedTest); head(xgbTreeImputedTest)
+xgbLinearRawTest = data.frame(Patient_ID = testing$Patient_ID, xgbLinearRaw = (featStackingTest1 + featStackingTest2)/2)
+tail(xgbLinearRawTest); head(xgbLinearRawTest)
 
-xgbTreeImputed = rbind(xgbTreeImputed, xgbTreeImputedTest)
-save(xgbTreeImputed, file = "./modelData/Metadata/xgbTreeImputed.RData")
+xgbLinearRaw = rbind(xgbLinearRaw, xgbLinearRawTest)
+save(xgbLinearRaw, file = "./modelData/Metadata/xgbLinearRaw.RData")
 
 
 

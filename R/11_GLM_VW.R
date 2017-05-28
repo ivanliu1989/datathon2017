@@ -82,6 +82,7 @@ dt2vw(data = training[260001:279201], fileName = './modelData/vw/val_dt_full.vw'
 # 279201
 # 279151
 dim(testing)
+testing$response = -1
 dt2vw(data = testing[1:20000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
 dt2vw(data = testing[20001:40000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
 dt2vw(data = testing[40001:60000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)

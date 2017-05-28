@@ -1,22 +1,20 @@
 library(data.table)
 rm(list = ls()); gc()
 load(file = "./modelData/tmp_outcomes2016.RData")
-# load(file = "./modelData/feat_all_extra_imputed_cleaned_pca_0527.RData")
-load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
-load(file = "./modelData/Metadata/xgbLinearPCA.RData")
-load(file = "./modelData/Metadata/xgbTreePCA.RData")
-load(file = "./modelData/Metadata/xgbLinearImputed.RData")
-load(file = "./modelData/Metadata/xgbTreeImputed.RData")
-setDT(fnl.dat)
-setDT(xgbLinearPCA)
-setDT(xgbTreePCA)
-fnl.dat = merge(fnl.dat, xgbLinearPCA, by = "Patient_ID")
-fnl.dat = merge(fnl.dat, xgbTreePCA, by = "Patient_ID")
+load(file = "./modelData/feat_all_scale_20170528_stacking.RData")
+load(file = "./datathon2017/featureImportant.RData")
+
+# Predictors and Response -------------------------------------------------
 fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
-rm(xgbLinearPCA); rm(xgbTreePCA); rm(tmp_outcomes2016); gc()
-# lst.files = list.files("./featImp", full.name = T)
-# impFeatures = rbindlist(lapply(lst.files, function(x) fread(x)))
-# predictors =unique(impFeatures$Feature)
+
+
+save(predictors, file = "./datathon2017/final_features_simp.RData")
+lst.files = list.files("./featImp3/", full.name = T)
+impFeatures = lapply(lst.files, function(x){
+    dt = head(fread(x, data.table = F), 500)
+})
+predictors = unique(rbindlist(impFeatures)$Feature)
+predictors =unique(predictors[predictors%in%colnames(fnl.dat)[!colnames(fnl.dat) %in% c('Patient_ID','response')]])
 predictors =colnames(fnl.dat)[!colnames(fnl.dat) %in% c('Patient_ID','response')]
 response = 'response'
 
@@ -27,7 +25,7 @@ rm(fnl.dat); gc()
 library(xgboost)
 
 # xgbFit.all = list()
-for(i in 21:40){
+for(i in 1:5){
     # i = 10
     set.seed(i)
     ss = 0.5#sample(c(0.2, 0.3, 0.4), 1)
@@ -42,25 +40,29 @@ for(i in 21:40){
     watchlist <- list(train = dtrain, eval = dval)
     gc()
     param <- list(
-        max_depth = 6,
-        eta = 0.01,
+        max_depth = 10,
+        eta = 0.1,
         nthread = 7,
         objective = "binary:logistic",
         eval_metric = "auc",
         eval_metric = "rmse",
         booster = "gbtree",
         # booster = "gblinear",
-        gamma = 0.1,
-        min_child_weight = 20,
-        subsample = 0.7,
-        colsample_bytree = 0.25
+        gamma = 0.2,
+        min_child_weight = 16,
+        subsample = 0.8,
+        colsample_bytree = 0.35,
+        lambda = 4,
+        alpha = 4, # 1e-5, 1e-2, 0.1, 1, 100
+        scale_pos_weight = 1,
+        seed = 1989
     )
-    xgbFit <- xgb.train(param,dtrain,nrounds = 10000,watchlist,print_every_n = 100,
-                        early_stopping_rounds = 20,verbose = 1)
+    xgbFit <- xgb.train(param,dtrain,nrounds = 2000,watchlist,print_every_n = 50,
+                        early_stopping_rounds = 50,verbose = 1)
     var.imp = xgb.importance(colnames(dtrain), model = xgbFit)
-    write.csv(var.imp, file = paste0("./featureImportance_pca_", i, ".csv"))
+    write.csv(var.imp, file = paste0("./featureImportance_Fnl_", i, ".csv"), row.names = F)
     
-    save(xgbFit, file = paste0("./xgboostModels/pca_xgb_", xgbFit$best_score,"_",i,".RData"))
+    save(predictors, xgbFit, file = paste0("./xgboostModels/feat_stacking_xgb_80_", xgbFit$best_score,"_",i,".RData"))
     
     # xgbFit.all[[i]] = xgbFit
     rm(trainBC); rm(validationBC); rm(dtrain); rm(dval); rm(xgbFit); rm(var.imp); gc()
@@ -79,9 +81,9 @@ dtesting <- xgb.DMatrix(data.matrix(convertNum(test[, predictors])), label = tes
 gc()
 pred.all = list()
 load("./xgboostModels/80_0_16_6_001_07_075_0971183_imputed.RData")
-pred.all[[1]] = predict(xgbFit, dtesting)
+pred.all[[1]] = predict(xgbFit, dtesting, ntreelimit=xgbFit$bestInd)
 load("./xgboostModels/80_0_16_8_0001_07_075_0971160_imputed.RData")
-pred.all[[2]] = predict(xgbFit, dtesting)
+pred.all[[2]] = predict(xgbFit, dtesting, ntreelimit=xgbFit$bestInd)
 # pred.all <- list()
 # gc()
 # for(i in 1:length(xgbFit.all)){

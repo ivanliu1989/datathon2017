@@ -1,7 +1,7 @@
 rm(list = ls()); gc()
 library(data.table)
 load("./data/meta.RData")
-load(file = "./5_xgb_model.RData")
+load(file = "./modelData/5_xgb_model.RData")
 
 # x = trans[!(Dispense_Week >= as.Date("2016-01-01") & ChronicIllness == "Diabetes")]
 x = trans[(Dispense_Week < as.Date("2016-01-01"))]
