@@ -1,10 +1,9 @@
 library(data.table)
 rm(list = ls()); gc()
 load(file = "./modelData/tmp_outcomes2016.RData")
-# load(file = "./modelData/feat_all_extra_imputed_cleaned_pca_0527.RData")
+load(file = "./modelData/feat_all_extra_imputed_cleaned_pca_0527.RData")
 # load(file = "./modelData/feat_all_scale_20170525_fix_all_extra_imputed_cleaned.RData")
-load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
-
+# load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
 setDT(fnl.dat)
 fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
 predictors =colnames(fnl.dat)[!colnames(fnl.dat) %in% c('Patient_ID','response')]
@@ -38,7 +37,7 @@ setDT(training)
 
 ############
 # vw ####
-###a########
+############
 library(r.vw)
 setDT(training)
 idx = 1:139600
@@ -67,144 +66,39 @@ get_feature_type <- function(X, threshold = 50, verbose = FALSE) {
 # setwd where the data would be
 target = 'response'
 tag = 'Patient_ID'
-data_types = get_feature_type(training[, setdiff(names(training), c(target, tag)), with=F], threshold = 50)
+data_types = get_feature_type(training[, setdiff(names(training), c(target, tag)), with=F], threshold = 0)
 namespaces = list(n = list(varName = data_types$num_vars, keepSpace=F))
 
-
 training$response = with(training, ifelse(response == 1, 1, -1))
-setDT(training)
-dt2vw(data = training[idx], fileName = './modelData/vw/train_dt.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL)
-dt2vw(data = training[-idx], fileName = './modelData/vw/val_dt.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL)
-dt2vw(data = testing, fileName = './modelData/vw/val_dt.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL)
+setDT(training);gc()
+dt2vw(data = training[120001:139600], fileName = './modelData/vw/train_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = training[139600:160000], fileName = './modelData/vw/val_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = training[160001:180000], fileName = './modelData/vw/val_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = training[180001:200000], fileName = './modelData/vw/val_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = training[200001:220000], fileName = './modelData/vw/val_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = training[220001:240000], fileName = './modelData/vw/val_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = training[240001:260000], fileName = './modelData/vw/val_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = training[260001:279201], fileName = './modelData/vw/val_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+# 279201
+# 279151
+dim(testing)
+dt2vw(data = testing[1:20000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[20001:40000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[40001:60000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[60001:80000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[80001:100000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[100001:120000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[120001:140000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[140001:160000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[160001:180000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[180001:200000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[200001:220000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[220001:240000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[240001:260000], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
+dt2vw(data = testing[260001:279151], fileName = './modelData/vw/test_dt_full.vw', namespaces = namespaces, target=target, tag = tag, weight=NULL, append = TRUE)
 
+# write.table( training[idx, response], file='./modelData/vw/train_labels.txt', row.names = F, col.names = F, quote = F)
 write.table( training[idx, response], file='./modelData/vw/train_labels.txt', row.names = F, col.names = F, quote = F)
-write.table( training[-idx, response], file='./modelData/vw/valid_labels.txt', row.names = F, col.names = F, quote = F)
-
-training_data='./modelData/vw/train_dt.vw'
-validation_data='./modelData/vw/validation_dt.vw'
-validation_labels = "./modelData/vw/valid_labels.txt"
-out_probs = "./modelData/vw/out.txt"
-model = "./modelData/vw/mdl.vw"
-
-list.files()
-
-auc = vw(training_data, validation_data, loss = "logistic",
-         model, b = 25, learning_rate = 0.5, passes = 1,
-         l1 = NULL, l2 = NULL, early_terminate = NULL,
-         link_function = "--link=logistic", extra = NULL, out_probs = "out.txt",
-         validation_labels = validation_labels, verbose = TRUE, do_evaluation = TRUE,
-         use_perf=FALSE, plot_roc=TRUE)
-
-print(auc)
-# [1] 0.9944229
-
-# AUC using pROC - Saving plots to disk
-### create a parameter grid
-grid = expand.grid(l1=c(1e-07, 1e-08),
-                   l2=c(1e-07, 1e-08),
-                   eta=c(0.1, 0.05),
-                   extra=c('--nn 10', ''))
-
-
-cat('Running grid search\n')
-pdf('ROCs.pdf')
-aucs <- lapply(1:nrow(grid), function(i){
-    g = grid[i, ]
-    auc = vw(training_data=training_data, # files relative paths
-             validation_data=validation_data,
-             validation_labels=validation_labels, model=model,
-             # grid options
-             loss='logistic', b=25, learning_rate=g[['eta']],
-             passes=2, l1=g[['l1']], l2=g[['l2']],
-             early_terminate=2, extra=g[['extra']],
-             # ROC-AUC related options
-             use_perf=FALSE, plot_roc=TRUE,
-             do_evaluation = TRUE # If false doesn't compute AUC, use only for prediction
-    )
-    auc
-})
-dev.off()
-
-results = cbind(iter=1:nrow(grid), grid, auc=do.call(rbind, aucs))
-print(results)
-# l1    l2  eta   extra     auc
-# 1  1e-07 1e-07 0.10 --nn 10 0.9964736
-# 2  1e-08 1e-07 0.10 --nn 10 0.9964945
-# 3  1e-07 1e-08 0.10 --nn 10 0.9964736
-# 4  1e-08 1e-08 0.10 --nn 10 0.9964946
-# 5  1e-07 1e-07 0.05 --nn 10 0.9956487
-# 6  1e-08 1e-07 0.05 --nn 10 0.9956629
-# 7  1e-07 1e-08 0.05 --nn 10 0.9956487
-# 8  1e-08 1e-08 0.05 --nn 10 0.9956629
-# 9  1e-07 1e-07 0.10         0.9878654
-# 10 1e-08 1e-07 0.10         0.9919489
-# 11 1e-07 1e-08 0.10         0.9878646
-# 12 1e-08 1e-08 0.10         0.9919487
-# 13 1e-07 1e-07 0.05         0.9883343
-# 14 1e-08 1e-07 0.05         0.9915172
-# 15 1e-07 1e-08 0.05         0.9883339
-# 16 1e-08 1e-08 0.05         0.9915170
-
-p = ggplot(results, aes(iter, auc, color=extra)) +
-    geom_point(size=3) +
-    theme_bw() +
-    labs(list(x='Iteration', y='AUC',
-              title='Logistic regression results'))
-
-print(p)
-ggsave('results_plot.png', plot=p)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Previous ----------------------------------------------------------------
-
-train_dt <- dt2vw(data = training[idx], target = response, tag = 'Patient_ID', fileName = '../modelData/vw/train_dt.vw')
-test_dt <- to_vw(training[f,], feat, target, '../modelData/vw/test_dt.vw')
-write.table(test_dt[,hat], file='data/vw/test_labels.txt', row.names = F, col.names = F, quote = F)
-
-training_data='../data/vw/train_dt.vw'
-test_data='../data/vw/test_dt.vw'
-test_labels = "../data/vw/test_labels.txt"
-out_probs = "../data/vw/sub.txt"
-model = "../data/vw/mdl.vw"
-
-# AUC using perf - Download at: osmot.cs.cornell.edu/kddcup/software.html
-# Shows files in the working directory: /data
-list.files('../data/vw')
-grid = expand.grid(eta=c(0.1, 0.3),
-                   extra=c('--holdout_period 50 --normalized --adaptive --invariant', 
-                           '--nn 30 --holdout_period 50 --normalized --adaptive --invariant',
-                           '-q:: --holdout_period 50 --normalized --adaptive --invariant'))
-for(i in 1:nrow(grid)){
-    g = grid[i, ]
-    out_probs = paste0("../data/vw/preds/submission_vw_20160428_NoReg_", g[['eta']], "_", i,".txt")
-    model = paste0("../data/vw/mdl",i,".vw")
-    # out_probs = paste0("predictions/submission_vw_20151126_0.25_1.txt")
-    auc = vw(training_data, training_data, loss = "logistic",
-             model, b = 30, learning_rate = g[['eta']], 
-             passes = 10, l1=1e-12, l2=NULL, early_terminate = 2,
-             link_function = "--link=logistic", extra = g[['extra']],
-             out_probs = out_probs, validation_labels = test_labels, verbose = TRUE, 
-             do_evaluation = F, use_perf=FALSE, plot_roc=F)
-    #extra='--decay_learning_rate 0.9 --ksvm --kernel linear -q ::'
-    cat(paste0('Iteration - ',i,'. AUC Score: ', auc, '. GINI Score:', (auc-0.5)*2, '. \n'))
-}
+write.table( training[-idx, response], file='./modelData/vw/val_labels.txt', row.names = F, col.names = F, quote = F)
 
 

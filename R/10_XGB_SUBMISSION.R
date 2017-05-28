@@ -1,28 +1,19 @@
-# Cross Validation --------------------------------------------------------
-# trainIndex <- createFolds(trainBC$response, k = 5, list = FALSE)
-# head(trainIndex)
 library(data.table)
 rm(list = ls()); gc()
 load(file = "./modelData/tmp_outcomes2016.RData")
-load(file = "./modelData/feat_all_extra_imputed_cleaned_pca_0527.RData")
-# load(file = "./modelData/feat_all_scale_20170525_fix_all_extra_imputed_cleaned.RData")
-# load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
+# load(file = "./modelData/feat_all_extra_imputed_cleaned_pca_0527.RData")
+load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
+load(file = "./modelData/Metadata/xgbLinearPCA.RData")
+load(file = "./modelData/Metadata/xgbTreePCA.RData")
+load(file = "./modelData/Metadata/xgbLinearImputed.RData")
+load(file = "./modelData/Metadata/xgbTreeImputed.RData")
 setDT(fnl.dat)
+setDT(xgbLinearPCA)
+setDT(xgbTreePCA)
+fnl.dat = merge(fnl.dat, xgbLinearPCA, by = "Patient_ID")
+fnl.dat = merge(fnl.dat, xgbTreePCA, by = "Patient_ID")
 fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
-# repNaN = function(x, rep = NA){
-#     x[,lapply(.SD,function(x){ifelse(is.nan(x),rep,x)})]    
-# }
-# repNA = function(x, rep = NA){
-#     x[,lapply(.SD,function(x){ifelse(is.na(x),rep,x)})]    
-# }
-# convertNum = function(x){
-#     for(i in 1:ncol(x)){
-#         x[, i] = as.numeric(x[, i])
-#     }
-#     x
-# }
-# fnl.dat = repNaN(fnl.dat, 0)
-# fnl.dat = repNA(fnl.dat, 0)
+rm(xgbLinearPCA); rm(xgbTreePCA); rm(tmp_outcomes2016); gc()
 # lst.files = list.files("./featImp", full.name = T)
 # impFeatures = rbindlist(lapply(lst.files, function(x) fread(x)))
 # predictors =unique(impFeatures$Feature)
@@ -36,14 +27,12 @@ rm(fnl.dat); gc()
 library(xgboost)
 
 # xgbFit.all = list()
-for(i in 1:20){
+for(i in 21:40){
     # i = 10
     set.seed(i)
     ss = 0.5#sample(c(0.2, 0.3, 0.4), 1)
     print(paste0("round ", i, " ", ss))
     idx = sample(1:nrow(training), ss * nrow(training))
-    # trainBC = convertNum(as.data.frame(training[-idx]))
-    # validationBC = convertNum(as.data.frame(training[idx]))
     trainBC = as.data.frame(training[-idx])
     validationBC = as.data.frame(training[idx])
     
@@ -53,7 +42,7 @@ for(i in 1:20){
     watchlist <- list(train = dtrain, eval = dval)
     gc()
     param <- list(
-        max_depth = 8,
+        max_depth = 6,
         eta = 0.01,
         nthread = 7,
         objective = "binary:logistic",
@@ -78,26 +67,8 @@ for(i in 1:20){
 }
 save(predictors,file="./predictors.RData")
 
-save(xgbFit, file = "./xgboostModels/80_0_16_8_0001_07_075_0971160.RData")
-save(xgbFit.all, file = "./xgboostModels_0969605_0969836.RData")
-
-# 0.96992 Cat
-# 0.969605
-# 0.970014	
-# 0.970064
-# 0.970113 importFeatures
-# 0.969923 All grid search / Imputed / gamma 0.5, child 10
-# 0.969833 All grid search / Imputed / gamma 0.5, child 10	
-# 0.969796 All grid search / Imputed / gamma 0.5, child 1	
-# 0.969814 All grid search / Imputed / gamma 0, child 1
-# 0.969896 All grid search / Imputed / gamma 0, child 6	
-# 0.969947 All grid search / Imputed / gamma 0, child 12		
-# 0.969920 All grid search / Imputed / gamma 0, child 26, max_depth = 14, eta = 0.01, subsample = 0.7, colsample = 0.15		
-# 0.970979 80% All grid search / Imputed / gamma 0, child 16, max_depth = 6, eta = 0.01, subsample = 0.7, colsample = 0.15	
-# 0.971183 80% All grid search / Imputed / gamma 0, child 16, max_depth = 6, eta = 0.01, subsample = 0.7, colsample = 0.75		
-#  80% All grid search / Imputed / gamma 0, child 16, max_depth = 8, eta = 0.001, subsample = 0.7, colsample = 0.75		
-
-#  80% All grid search / Imputed / gamma 0, child 16, max_depth = 6, eta = 0.01, subsample = 0.7, colsample = 0.75	
+# save(xgbFit, file = "./xgboostModels/80_0_16_8_0001_07_075_0971160.RData")
+# save(xgbFit.all, file = "./xgboostModels_0969605_0969836.RData")
 
 
 # Predicting --------------------------------------------------------------
