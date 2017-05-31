@@ -1,13 +1,13 @@
 library(data.table)
 RANK_BLEND = F
-top1 = fread("../submission_final/submission/xgb_glm_0529_2_rank.csv")
-top2 = fread("../submission_final/submission/xgb_glm_0529.csv")
-top3 = fread("../submission_final/submission/xgb_glm_80_20_rank.csv")
+top1 = fread("./submission_final/submission/xgb_glm_0529_2_rank.csv")
+top2 = fread("./submission_final/submission/xgb_glm_0529.csv")
+top3 = fread("./submission_final/submission/xgb_glm_80_20_rank.csv")
 # bottom = fread("../submission/")
 
 # XGBOOST RMSE
-xgb_rmse_files = list.files("../submission_final/xgboost_rmse/", full.names = TRUE)
-xgb_rmse_wts = list.files("../submission_final/xgboost_rmse/")
+xgb_rmse_files = list.files("./submission_final/xgboost_rmse/", full.names = TRUE)
+xgb_rmse_wts = list.files("./submission_final/xgboost_rmse/")
 xgb_rmse_wts = 1/as.numeric(gsub(pattern = ".csv", replacement = "", x = xgb_rmse_wts))
 xgb_rmse_list = data.frame(xgb_rmse_files, xgb_rmse_wts)
 xgb_rmse_list$xgb_rmse_wts = xgb_rmse_list$xgb_rmse_wts - (min(xgb_rmse_list$xgb_rmse_wts) - 3*sd(xgb_rmse_list$xgb_rmse_wts))
@@ -33,8 +33,8 @@ if(RANK_BLEND){
 }
 
 # XGBOOST AUC
-xgb_auc_files = list.files("../submission_final/xgboost_auc/", full.names = TRUE)
-xgb_auc_wts = list.files("../submission_final/xgboost_auc/")
+xgb_auc_files = list.files("./submission_final/xgboost_auc/", full.names = TRUE)
+xgb_auc_wts = list.files("./submission_final/xgboost_auc/")
 xgb_auc_wts = as.numeric(gsub(pattern = ".csv", replacement = "", x = xgb_auc_wts))
 xgb_auc_list = data.frame(xgb_auc_files, xgb_auc_wts)
 xgb_auc_list$xgb_auc_wts = xgb_auc_list$xgb_auc_wts - (min(xgb_auc_list$xgb_auc_wts) - 3*sd(xgb_auc_list$xgb_auc_wts))
@@ -60,8 +60,8 @@ if(RANK_BLEND){
 }
 
 # EXTRATREE
-extra_files = list.files("../submission_final/extratree/", full.names = TRUE)
-extra_wts = list.files("../submission_final/extratree/")
+extra_files = list.files("./submission_final/extratree/", full.names = TRUE)
+extra_wts = list.files("./submission_final/extratree/")
 extra_wts = as.numeric(gsub(pattern = ".csv", replacement = "", x = extra_wts))
 extra_list = data.frame(extra_files, extra_wts)
 extra_list$extra_wts = extra_list$extra_wts - (min(extra_list$extra_wts) - 3*sd(extra_list$extra_wts))
@@ -89,8 +89,8 @@ if(RANK_BLEND){
 
 
 # GLM
-glm_files = list.files("../submission_final/glm/", full.names = TRUE)
-glm_wts = list.files("../submission_final/glm/")
+glm_files = list.files("./submission_final/glm/", full.names = TRUE)
+glm_wts = list.files("./submission_final/glm/")
 glm_wts = as.numeric(gsub(pattern = ".csv", replacement = "", x = glm_wts))
 glm_list = data.frame(glm_files, glm_wts)
 glm_list$glm_wts = glm_list$glm_wts - (min(glm_list$glm_wts) - 3*sd(glm_list$glm_wts))
@@ -118,8 +118,8 @@ if(RANK_BLEND){
 
 
 # RF
-rf_files = list.files("../submission_final/rf/", full.names = TRUE)
-rf_wts = list.files("../submission_final/rf/")
+rf_files = list.files("./submission_final/rf/", full.names = TRUE)
+rf_wts = list.files("./submission_final/rf/")
 rf_wts = as.numeric(gsub(pattern = ".csv", replacement = "", x = rf_wts))
 rf_list = data.frame(rf_files, rf_wts)
 rf_list$rf_wts = rf_list$rf_wts - (min(rf_list$rf_wts) - 3*sd(rf_list$rf_wts))
@@ -147,8 +147,8 @@ if(RANK_BLEND){
 }
 
 # NNETS
-nn_files = list.files("../submission_final/nnet/", full.names = TRUE)
-nn_wts = list.files("../submission_final/nnet/")
+nn_files = list.files("./submission_final/nnet/", full.names = TRUE)
+nn_wts = list.files("./submission_final/nnet/")
 nn_wts = as.numeric(gsub(pattern = ".csv", replacement = "", x = nn_wts))
 nn_list = data.frame(nn_files, nn_wts)
 nn_list$nn_wts = nn_list$nn_wts - (min(nn_list$nn_wts) - 3*sd(nn_list$nn_wts))
@@ -205,7 +205,7 @@ if(RANK_BLEND){
 }
 
 final.res$Diabetes = (frank(final.res$Diabetes, ties.method = "dense") *0.35+top1$Diabetes * 0.65)
-write.csv(final.res, file = "../submission_final/extratree_rf_glm_xgb_blend.csv", row.names = F)
+write.csv(final.res, file = "./submission_final/extratree_rf_glm_xgb_blend.csv", row.names = F)
 
 
 

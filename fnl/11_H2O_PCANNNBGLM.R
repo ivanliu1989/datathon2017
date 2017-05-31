@@ -1,10 +1,26 @@
 library(data.table)
 rm(list = ls()); gc()
-load(file = "./modelData/tmp_outcomes2016.RData")
-# load(file = "./modelData/feat_all_scale_20170528_stacking.RData")
-load(file = "./modelData/feat_simplified_20170529.RData")
-# load(file = "./datathon2017/final_features.RData")
-load(file = "./datathon2017/final_features_simp.RData")
+# load(file = "./modelData/tmp_outcomes2016.RData")
+# load(file = "./modelData/feat_simplified_20170529.RData")
+# load(file = "./datathon2017/final_features_simp.RData")
+load(file = "./modelData/ivan_noah_dt.RData")
+# saveRDS(training, file = "./modelData/ivan_noah_dt_train.rds")
+# saveRDS(test, file = "./modelData/ivan_noah_dt_test.rds")
+# saveRDS(predictors, file = "./modelData/ivan_noah_dt_predictors.rds")
+# # noahtrain = readRDS("./modelData/dt_train_eng_all.rds")
+# noahtest = readRDS("./modelData/dt_test_eng_all.rds")
+
+# setDT(fnl.dat)
+# training = fnl.dat[Patient_ID <= 279201]
+# test = as.data.frame(fnl.dat[Patient_ID > 279201])
+# 
+# training = merge(noahtrain, training, by = "Patient_ID")
+# test = merge(noahtest, test, by = "Patient_ID")
+# predictors =  colnames(training)[!colnames(training)%in% c("Patient_ID", "Target")]
+# save(training, test, predictors, file = "./modelData/ivan_noah_dt.RData")
+
+predictors = predictors[!grepl("ATC", predictors)]
+
 
 makeSubmit <- function(pred){
     library(data.table)
@@ -20,20 +36,20 @@ makeSubmit <- function(pred){
 }
 
 # Predictors and Response -------------------------------------------------
-fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
-response = 'response'
+# fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
+response = 'Target'
 
-setDT(fnl.dat)
-training = fnl.dat[Patient_ID <= 279201]
-test = as.data.frame(fnl.dat[Patient_ID > 279201])
-rm(fnl.dat); gc()
+# setDT(fnl.dat)
+# training = fnl.dat[Patient_ID <= 279201]
+# test = as.data.frame(fnl.dat[Patient_ID > 279201])
+# rm(fnl.dat); gc()
 testID = test$Patient_ID
 
 
 # h2o ---------------------------------------------------------------------
 library(h2o)
 reg = FALSE
-localH2O <- h2o.init(max_mem_size = '30g', nthreads = 5)
+localH2O <- h2o.init(max_mem_size = '40g', nthreads = 5)
 h2o.removeAll()
 nfolds = 5
 evalMetrics = ifelse(reg, 'MSE', 'AUC')
@@ -41,20 +57,25 @@ maxmize = ifelse(evalMetrics == 'AUC', TRUE, FALSE)
 glm.family = ifelse(reg, 'gaussian', 'binomial')
 
 # GLM ---------------------------------------------------------------------
-# h2o.glm.learner = h2o.glm(training_frame=as.h2o(training),
-#                           # validation_frame=as.h2o(testBC),
-#                           x=predictors,
-#                           y=response,
-#                           family=glm.family,
-#                           max_iterations=1e5,
-#                           # standardize = TRUE,
-#                           # intercept = FALSE,
-#                           alpha = 0, # 1 lasso | 0 ridge
-#                           lambda_search=TRUE,
-#                           # fold_assignment = "Modulo",
-#                           nfolds = nfolds,
-#                           early_stopping=TRUE
-# )
+h2o.glm.learner = h2o.glm(training_frame=as.h2o(training),
+                          # validation_frame=as.h2o(testBC),
+                          x=predictors,
+                          y=response,
+                          family=glm.family,
+                          # max_iterations=1e5,
+                          # solver = "L_BFGS",
+                          # standardize = TRUE,
+                          # intercept = FALSE,
+                          alpha = 0, # 1 lasso | 0 ridge
+                          # lambda =,
+                          # balance_classes = T,
+                          # missing_values_handling = 'Skip',
+                          # remove_collinear_columns = T,
+                          lambda_search=T,
+                          # fold_assignment = "Modulo",
+                          nfolds = nfolds,
+                          early_stopping=TRUE
+)
 # 0.9667094  / 0.9563201 
 # h2o.saveModel(h2o.glm.learner, dir = "", name = "", filename = "", force = FALSE)
 # h2o.loadModel(path, conn = h2o.getConnection())
@@ -87,20 +108,21 @@ glm.family = ifelse(reg, 'gaussian', 'binomial')
 
 # Random Forest -----------------------------------------------------------
 # training$response = ifelse(training$response == 1, 'Y', 'N')
-# h2o.rf.learner <- h2o.randomForest(training_frame=as.h2o(training),
-#                  x=predictors,
-#                  y=response,
-#                  keep_cross_validation_predictions = T,
-#                  nfolds = nfolds)
-# 
-# h2o.rf.pred = predict(h2o.rf.learner, as.h2o(test[, predictors]))
-# pred.rf = as.data.frame(h2o.rf.pred[,1])[,1]
-# pred = makeSubmit(pred.rf)
-# write.csv(pred, file = paste0("./submit20170529_RF_SUBMIT.csv"),row.names = F)
+h2o.rf.learner <- h2o.randomForest(training_frame=as.h2o(training),
+                 x=predictors,
+                 y=response,
+                 balance_classes = T,
+                 keep_cross_validation_predictions =F,
+                 nfolds = nfolds)
+
+h2o.rf.pred = predict(h2o.rf.learner, as.h2o(test[, predictors]))
+pred.rf = as.data.frame(h2o.rf.pred[,1])[,1]
+pred = makeSubmit(pred.rf)
+write.csv(pred, file = paste0("./submit20170529/RF_SUBMIT_NEW.csv"),row.names = F)
 
 
 # Deep learning -----------------------------------------------------------
-training$response = as.factor(ifelse(training$response == 1, 'Y', 'N'))
+# training$response = as.factor(ifelse(training$response == 1, 'Y', 'N'))
 h2o.dl.learner <- h2o.deeplearning(training_frame=as.h2o(training),
                                    x=predictors,
                                    y=response,
@@ -108,7 +130,7 @@ h2o.dl.learner <- h2o.deeplearning(training_frame=as.h2o(training),
                                    nfolds = nfolds,
                                    distribution = 'bernoulli',
                                    
-                                   epochs=1000,
+                                   epochs=2000,
                                    stopping_rounds=2,
                                    rate=0.01,
                                    rate_annealing=2e-6,
@@ -125,7 +147,7 @@ h2o.dl.learner <- h2o.deeplearning(training_frame=as.h2o(training),
 h2o.dl.pred = predict(h2o.dl.learner, as.h2o(test[, predictors]))
 pred.dl = as.data.frame(h2o.dl.pred[,3])[,1]
 pred = makeSubmit(pred.dl)
-write.csv(pred, file = paste0("./submit20170529/NNET_SUBMIT.csv"),row.names = F)
+write.csv(pred, file = paste0("./submit20170529/NNET_SUBMIT_NEW.csv"),row.names = F)
 
 
 

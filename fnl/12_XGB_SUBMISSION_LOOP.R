@@ -1,9 +1,22 @@
 library(data.table)
 rm(list = ls()); gc()
-load(file = "./modelData/tmp_outcomes2016.RData")
-load(file = "./modelData/feat_all_scale_20170528_stacking.RData")
-# load(file = "./datathon2017/final_features.RData")
-load(file = "./datathon2017/final_features_simp.RData")
+# load(file = "./modelData/tmp_outcomes2016.RData")
+# load(file = "./modelData/feat_simplified_20170529.RData")
+# load(file = "./datathon2017/final_features_simp.RData")
+load(file = "./modelData/ivan_noah_dt.RData")
+# noahtrain = readRDS("./modelData/dt_train_eng_all.rds")
+# noahtest = readRDS("./modelData/dt_test_eng_all.rds")
+
+# setDT(fnl.dat)
+# training = fnl.dat[Patient_ID <= 279201]
+# test = as.data.frame(fnl.dat[Patient_ID > 279201])
+# 
+# training = merge(noahtrain, training, by = "Patient_ID")
+# test = merge(noahtest, test, by = "Patient_ID")
+# predictors =  colnames(training)[!colnames(training)%in% c("Patient_ID", "Target")]
+# save(training, test, predictors, file = "./modelData/ivan_noah_dt.RData")
+
+predictors = predictors[!grepl("TargetMean", predictors)]
 
 makeSubmit <- function(pred){
     library(data.table)
@@ -19,20 +32,18 @@ makeSubmit <- function(pred){
 }
 
 # Predictors and Response -------------------------------------------------
-fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
-response = 'response'
+# fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
+response = 'Target'
 
 # xgboost -----------------------------------------------------------------
-setDT(fnl.dat)
-training = fnl.dat[Patient_ID <= 279201]
-test = as.data.frame(fnl.dat[Patient_ID > 279201])
+setDF(test)
 rm(fnl.dat); gc()
 library(xgboost)
 dtesting <- xgb.DMatrix(data.matrix(test[, predictors]), label = test[, response])
 testID = test$Patient_ID
 rm(test); gc()
 
-for(i in 88:108){
+for(i in 1:10){
     print(i)
     
     set.seed(i)
@@ -40,7 +51,7 @@ for(i in 88:108){
     idx = sample(1:nrow(training), ss * nrow(training))
     trainBC = as.data.frame(training[-idx])
     validationBC = as.data.frame(training[idx])
-    dtrain.full = xgb.DMatrix(data.matrix(as.data.frame(training)[, predictors]), label = as.data.frame(training)[, response])
+    # dtrain.full = xgb.DMatrix(data.matrix(as.data.frame(training)[, predictors]), label = as.data.frame(training)[, response])
     dtrain <- xgb.DMatrix(data.matrix(trainBC[, predictors]), label = trainBC[, response])
     dval <- xgb.DMatrix(data.matrix(validationBC[, predictors]), label = validationBC[, response])
     watchlist <- list(train = dtrain, eval = dval)
@@ -51,8 +62,8 @@ for(i in 88:108){
         eta = 0.03,
         nthread = 7,
         objective = "binary:logistic",
-        # eval_metric = "logloss",
         eval_metric = "auc",
+        eval_metric = "rmse",
         booster = "gbtree",
         gamma = 0.01,
         min_child_weight = 16,
@@ -65,16 +76,16 @@ for(i in 88:108){
         seed = 19890624
     )
     xgbFit <- xgb.train(param,dtrain,nrounds = 5000,watchlist,print_every_n = 50,
-                        early_stopping_rounds = 50,verbose = 1)
+                        early_stopping_rounds = 20,verbose = 1)
     
-    xgbFit.full <- xgb.train(param,dtrain.full,nrounds = xgbFit$bestInd,print_every_n = 50,verbose = 1)
+    # xgbFit.full <- xgb.train(param,dtrain.full,nrounds = xgbFit$bestInd,print_every_n = 50,verbose = 1)
     
-    pred = predict(xgbFit.full, dtesting)
+    pred = predict(xgbFit, dtesting)
     pred = makeSubmit(pred)
-    write.csv(pred, file = paste0("./submit20170529/logloss/XGB_SUBMIT_AUC_", xgbFit$best_score,"_",i,".csv"),
+    write.csv(pred, file = paste0("./submission_final/ivannoah/XGB_SUBMIT_RMSE_", xgbFit$best_score,"_",i,".csv"),
               row.names = F)
     
-    save(predictors, xgbFit, file = paste0("./submit20170529/logloss/XGB_SUBMIT_AUC_", xgbFit$best_score,"_",i,".RData"))
+    # save(predictors, xgbFit, file = paste0("./submission_final/ivannoah/XGB_SUBMIT_AUC_", xgbFit$best_score,"_",i,".RData"))
     
     rm(trainBC); rm(validationBC); rm(dtrain); rm(dval); rm(xgbFit); gc()
 }

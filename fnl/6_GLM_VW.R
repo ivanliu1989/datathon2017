@@ -1,39 +1,54 @@
 library(data.table)
 rm(list = ls()); gc()
-load(file = "./modelData/tmp_outcomes2016.RData")
-load(file = "./modelData/feat_all_extra_imputed_cleaned_pca_0527.RData")
-# load(file = "./modelData/feat_all_scale_20170525_fix_all_extra_imputed_cleaned.RData")
-# load(file = "./modelData/feat_all_scale_20170525_fix_all_extra.RData")
-setDT(fnl.dat)
-fnl.dat[, response := ifelse(Patient_ID %in% tmp_outcomes2016, 1, 0)]
-predictors =colnames(fnl.dat)[!colnames(fnl.dat) %in% c('Patient_ID','response')]
-response = 'response'
+load(file = "./modelData/ivan_noah_dt.RData")
+predictors = predictors[!grepl("ATC", predictors)]
 
-training = fnl.dat[Patient_ID <= 279201]
-testing = fnl.dat[Patient_ID > 279201]
-rm(fnl.dat); gc()
-library(xgboost)
-setDT(training)
-
+makeSubmit <- function(pred){
+    library(data.table)
+    submissions = fread("./datathon2017/data/diabetes_submission_example.csv")
+    submit_score = data.table(Patient_ID = testID, Diabetes = pred)
+    options(scipen = 3)
+    submissions = merge(submissions, submit_score, by = "Patient_ID", all.x = T)
+    submissions[, Diabetes.x := NULL]
+    setnames(submissions, c("Patient_ID", "Diabetes"))
+    submissions[is.na(Diabetes), Diabetes := 0.0000000001]
+    submissions[, Patient_ID := as.character(Patient_ID)]
+    submissions
+}
+# Predictors and Response -------------------------------------------------
+response = 'Target'
 
 ############
 # glm ####
 ############
-# training[,response] = as.factor(training[,response])
-# library(caret)
-# library(glmnet)
-# set.seed(5)
-# cv <- 10
-# folds <- createFolds(training[,response], k = cv, list = FALSE)
-# f <- folds == 2
-# fit <- glmnet(as.matrix(training[!f, predictors]), training[!f, response],
-#               family = 'binomial', alpha = 1, standardize = TRUE,
-#               intercept = TRUE, thresh = 1e-7, maxit = 10^5, type.gaussian = 'naive',
-#               type.logistic = 'modified.Newton'
-# )
-# preds <- predict(fit, as.matrix(training[f,predictors]),type="class")
-# evalerror(as.numeric(preds[,2]),training[f,response])
-# # 0.7961559
+setDT(training)
+repNaN = function(x, rep = 0){
+    x[,lapply(.SD,function(x){ifelse(is.nan(x),rep,x)})]    
+}
+repNA = function(x, rep = 0){
+    x[,lapply(.SD,function(x){ifelse(is.na(x),rep,x)})]    
+}
+training = repNaN(training)
+training = repNA(training)
+
+setDF(training)
+training[,response] = as.factor(training[,response])
+library(caret)
+library(glmnet)
+set.seed(5)
+cv <- 10
+folds <- createFolds(training[,response], k = cv, list = FALSE)
+f <- folds == 2
+fit <- glm(Target~., data = training[, c(response, predictors)], family = 'binomial')
+setDF(test)
+preds <- predict(fit, test[,predictors])
+testID= test$Patient_ID
+preds_GLM = makeSubmit(preds)
+
+write.csv(preds_GLM, file = "./submission_final/glm_ivan_noah.csv", row.names = F)
+
+
+# 0.7961559
 
 ############
 # vw ####
